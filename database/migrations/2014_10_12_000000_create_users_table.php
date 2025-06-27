@@ -11,15 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
+      Schema::create('users', function (Blueprint $table) {
+            $table->bigIncrements('id_user');
+            $table->unsignedBigInteger('id_person');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('role', ['user', 'admin'])->default('user');
-            $table->string('avatar')->nullable();
+            $table->unsignedBigInteger('id_rol');
+            $table->rememberToken();
             $table->timestamps();
-        });
+
+            $table->foreign('id_rol')->references('id_rol')->on('roles')->onDelete('cascade');
+            $table->foreign('id_person')->references('id_person')->on('personas')->onDelete('cascade');
+});
     }
 
     /**

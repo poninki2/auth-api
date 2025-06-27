@@ -9,20 +9,23 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class CartItem extends Model
 {
-    use HasFactory;
+    protected $table = 'cart_items';
+    protected $primaryKey = 'id_cart_item';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    protected $fillable = [ 'user_id',  
-                            'product_id', 
-                            'quantity', 
-                            'added_at'];
+    protected $fillable = [
+        'id_user', 'id_product', 'quantity', 'added_at',
+    ];
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'id_user');
     }
 
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class, 'id_product');
     }
 }
+

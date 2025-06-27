@@ -12,16 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->bigIncrements('id_order');
+            $table->unsignedBigInteger('id_user');
             $table->json('items');
             $table->decimal('total', 10, 2);
-            $table->string('status')->default('pending');
+            $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
             $table->json('shipping_address');
             $table->string('payment_method');
             $table->timestamp('estimated_delivery')->nullable();
             $table->timestamps();
-        });
+
+    $table->foreign('id_user')->references('id_user')->on('users')->onDelete('cascade');
+});
+
     }
 
     /**

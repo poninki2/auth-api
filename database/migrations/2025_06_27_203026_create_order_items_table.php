@@ -11,18 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cart_items', function (Blueprint $table) {
-            $table->bigIncrements('id_cart_item');
-            $table->unsignedBigInteger('id_user');
+        Schema::create('order_items', function (Blueprint $table) {
+            $table->id('id_order_item');
+            $table->unsignedBigInteger('id_order');
             $table->unsignedBigInteger('id_product');
             $table->integer('quantity')->default(1);
-            $table->timestamp('added_at')->useCurrent();
+            $table->decimal('price', 10, 2); // price at the time of purchase
             $table->timestamps();
 
-            $table->foreign('id_user')->references('id_user')->on('users')->onDelete('cascade');
+            $table->foreign('id_order')->references('id_order')->on('orders')->onDelete('cascade');
             $table->foreign('id_product')->references('id_product')->on('products')->onDelete('cascade');
-});
-
+        });
     }
 
     /**
@@ -30,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cart_items');
+        Schema::dropIfExists('order_items');
     }
 };
