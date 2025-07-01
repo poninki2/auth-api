@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Http\Controllers\API;
 
 use App\Models\User;
@@ -15,47 +16,74 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string',
-            'apellido' => 'required|string',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6|confirmed',
-            'direccion' => 'nullable|string',
-            'telefono' => 'nullable|string|max:20',
+            'first_name' => 'required|string',
+            'last_name'  => 'required|string',
+            'email'      => 'required|email|unique:users,email',
+            'password'   => 'required|min:6|confirmed',
+            'avatar'     => 'nullable|string',
+            'address'    => 'nullable|string',
+            'phone'      => 'nullable|string|max:20',
         ]);
+
+        // Crear persona
+        $persona = Persona::create([
+            'first_name' => $request->first_name,
+            'last_name'  => $request->last_name,
+            'avatar'     => $request->avatar,
+            'address'    => $request->address,
+            'phone'      => $request->phone,
+        ]);
+
+        // Obtener el rol "cliente"
+        $rolCliente = Rol::where('name', 'cliente')->firstOrFail();
 
         // Crear usuario
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
+            'id_person' => $persona->id_person,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password),
+            'id_rol'    => $rolCliente->id_rol,
         ]);
 
-        // Buscar rol cliente
-        $rolCliente = Rol::where('name', 'cliente')->firstOrFail();
+        // Generar token
+        $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Crear persona asociada
-        Persona::create([
-            'user_id' => $user->id,
-            'nombre' => $request->name,
-            'apellido' => $request->apellido,
-            'direccion' => $request->direccion,
-            'telefono' => $request->telefono,
-            'rol_id' => $rolCliente->id,
+        return response()->json([
+            'success' => true,
+            'user'    => $user->load('persona', 'rol'),
+            'token'   => $token,
+        ]);
+    }
+
+    public function createUser(Request $request)
+    {
+        $request->validate([
+            'id_person' => 'required|exists:personas,id_person',
+            'email'     => 'required|email|unique:users,email',
+            'password'  => 'required|min:6|confirmed',
+            'id_rol'    => 'required|exists:roles,id_rol',
+        ]);
+
+        $user = User::create([
+            'id_person' => $request->id_person,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password),
+            'id_rol'    => $request->id_rol,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'success' => true,
-            'user' => $user,
-            'token' => $token
+            'user'    => $user->load('persona', 'rol'),
+            'token'   => $token,
         ]);
     }
 
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required'
         ]);
 
@@ -63,7 +91,7 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Credenciales incorrectas'],
+                'email' => ['Incorrect credentials'],
             ]);
         }
 
@@ -71,8 +99,8 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'user' => $user,
-            'token' => $token
+            'user'    => $user->load('persona', 'rol'),
+            'token'   => $token
         ]);
     }
 
@@ -85,27 +113,40 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        $user = $request->user()->load('persona.rol');
+        $user = $request->user()->load('persona', 'rol');
 
         return response()->json([
-            'user' => $user,
-            'persona' => $user->persona,
-            'rol' => $user->persona->rol->name ?? null
+            'success' => true,
+            'user'    => $user,
         ]);
     }
 
     public function updateProfile(Request $request)
     {
         $user = $request->user();
-        $user->update($request->only(['name', 'email']));
+
+        $request->validate([
+            'email'      => 'sometimes|email|unique:users,email,' . $user->id_user . ',id_user',
+            'first_name' => 'sometimes|string',
+            'last_name'  => 'sometimes|string',
+            'avatar'     => 'nullable|string',
+            'address'    => 'nullable|string',
+            'phone'      => 'nullable|string|max:20',
+        ]);
+
+        if ($request->filled('email')) {
+            $user->update(['email' => $request->email]);
+        }
 
         if ($user->persona) {
-            $user->persona->update($request->only(['nombre', 'apellido', 'direccion', 'telefono']));
+            $user->persona->update($request->only([
+                'first_name', 'last_name', 'avatar', 'address', 'phone'
+            ]));
         }
 
         return response()->json([
             'success' => true,
-            'user' => $user->load('persona.rol')
+            'user'    => $user->load('persona', 'rol')
         ]);
     }
 }

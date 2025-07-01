@@ -10,6 +10,7 @@ use App\Http\Controllers\API\OrderController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/users', [AuthController::class, 'createUser']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
